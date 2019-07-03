@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:task="http://www.springframework.org/schema/task"
+
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.0.xsd
+		">
+
+	<!-- 配置自定扫描的包 -->
+	<context:component-scan base-package="com.atguigu.springmvc"></context:component-scan>
+
+	<!-- 配置视图解析器: 如何把 handler 方法返回值解析为实际的物理视图 -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/views/"></property>
+		<property name="suffix" value=".jsp"></property>
+	</bean>
+
+	<!-- 配置视图 BeanNameViewResolver 解析器: 使用视图的名字来解析视图 -->
+	<!-- 通过 order 属性来定义视图解析器的优先级, order 值越小优先级越高 -->
+	<bean class="org.springframework.web.servlet.view.BeanNameViewResolver">
+		<property name="order" value="100"></property>
+	</bean>
+
+	<!-- 配置国际化资源文件 -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ResourceBundleMessageSource">
+		<property name="basename" value="i18n"></property>
+	</bean>
+
+	<!-- 配置直接转发的页面 -->
+	<!-- 可以直接相应转发的页面, 而无需再经过 Handler 的方法. -->
+	<mvc:view-controller path="/success" view-name="success" />
+
+	<!-- 在实际开发中通常都需配置 mvc:annotation-driven 标签 -->
+	<mvc:annotation-driven></mvc:annotation-driven>
+
+	<mvc:view-controller path="/i18n" view-name="i18n" />
+
+	<mvc:view-controller path="/i18n2" view-name="i18n2" />
+	
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+
+	<!--定义切面 指定拦截方法时 做什么 -->
+	<bean id="xmlAopDemoUserLog" class="com.atguigu.springmvc.aop.XmlAopDemoUserLog"></bean>
+	<aop:config>
+		<aop:aspect ref="xmlAopDemoUserLog"> <!--指定切面 -->
+			<!--定义切点 --><!-- execution(* com.atguigu.springmvc.service.HelloService.hello(..)) -->
+			<aop:pointcut id="logpoint"
+				expression="@annotation(com.atguigu.springmvc.service.TestLog) and @annotation(com.atguigu.springmvc.service.TestLog2)"></aop:pointcut>
+			<!--定义连接点 -->
+			<aop:before pointcut-ref="logpoint" method="beforeLog"></aop:before>
+			<aop:after pointcut-ref="logpoint" method="afterLog"></aop:after>
+			<aop:after-returning pointcut-ref="logpoint"
+				method="afterReturningLog"></aop:after-returning>
+			<aop:after-throwing pointcut-ref="logpoint"
+				method="afterThrowingLog" throwing="throwable"></aop:after-throwing>
+		</aop:aspect>
+	</aop:config>
+	
+	<bean id="abc" class="java.util.concurrent.ScheduledThreadPoolExecutor">
+        <constructor-arg value="4"/>
+    </bean>
+	 <!-- 任务调度器 -->
+    <task:scheduler id="scheduler"  pool-size="10"  />
+    <!-- 任务执行器 -->
+    <task:executor id="executor" pool-size="100-200" queue-capacity="500" rejection-policy="CALLER_RUNS" />
+    <!-- 异常拦截器 -->
+    <bean id="asyncExceptionHandler"  class="com.atguigu.springmvc.exception.AsyncExceptionHandler"/>
+    <!--开启注解调度支持 @Async @Scheduled-->
+    <task:annotation-driven executor="executor" exception-handler="asyncExceptionHandler" scheduler="scheduler" proxy-target-class="true"/>
+	
+</beans>
